@@ -44,7 +44,8 @@ export async function hostJoin(code: string, pin: string): Promise<{
 export async function getSessionState(
   code: string
 ): Promise<PublicSessionState> {
-  return api(`/api/session/${code}`);
+  const cleanCode = code.trim().toUpperCase();
+  return api(`/api/session/${encodeURIComponent(cleanCode)}`);
 }
 
 export async function teamJoin(
@@ -52,9 +53,10 @@ export async function teamJoin(
   teamName: string,
   teamId?: string
 ): Promise<{ teamId: string; state: PublicSessionState }> {
-  return api(`/api/session/${code}/team-join`, {
+  const cleanCode = code.trim().toUpperCase();
+  return api(`/api/session/${encodeURIComponent(cleanCode)}/team-join`, {
     method: "POST",
-    body: JSON.stringify({ teamName, teamId }),
+    body: JSON.stringify({ teamName: teamName.trim(), teamId }),
   });
 }
 
@@ -62,7 +64,8 @@ export async function buzz(
   code: string,
   teamId: string
 ): Promise<{ status: string; winnerTeamId?: string }> {
-  return api(`/api/session/${code}/buzz`, {
+  const cleanCode = code.trim().toUpperCase();
+  return api(`/api/session/${encodeURIComponent(cleanCode)}/buzz`, {
     method: "POST",
     body: JSON.stringify({ teamId }),
   });

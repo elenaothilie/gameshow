@@ -51,27 +51,36 @@ export default function TeamPage() {
   }, [session?.buzzingOpen, session?.activeQuestionId]);
 
   const joinSession = async () => {
-    if (!sessionCode || !teamName) return;
+    const code = sessionCode?.trim().toUpperCase();
+    const name = teamName?.trim();
+    if (!code || !name) return;
     setJoinError(null);
     setJoining(true);
     try {
       const { teamId: newTeamId, state } = await api.teamJoin(
-        sessionCode,
-        teamName,
+        code,
+        name,
         teamId ?? undefined
       );
       setSession(state);
       setTeamId(newTeamId);
+      setSessionCode(code);
+      setTeamName(name);
       localStorage.setItem(
         STORAGE_KEY,
         JSON.stringify({
-          code: sessionCode,
-          name: teamName,
+          code,
+          name,
           teamId: newTeamId,
         })
       );
     } catch (err) {
-      setJoinError("Could not join. Check the code and try again.");
+      const message = err instanceof Error ? err.message : "";
+      setJoinError(
+        message === "Session not found."
+          ? "Session not found. Check the code, or ask the host to create a new session."
+          : "Could not join. Check the code and try again."
+      );
     } finally {
       setJoining(false);
     }
@@ -106,6 +115,9 @@ export default function TeamPage() {
           <h1 className="text-3xl font-extrabold text-cyan-100">
             Join Jeopardy Round 1
           </h1>
+          <p className="text-sm text-white/50">
+            Use the same URL as the host (same site in the address bar)
+          </p>
           {joinError && (
             <p className="rounded-xl border border-amber-500/40 bg-amber-500/10 px-4 py-3 text-amber-200">
               {joinError}

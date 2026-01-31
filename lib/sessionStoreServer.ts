@@ -75,14 +75,19 @@ async function getRedis() {
 
 const KEY_PREFIX = "gameshow:session:";
 
+function normalizeCode(code: string): string {
+  return code.trim().toUpperCase();
+}
+
 async function getFromStore(code: string): Promise<SessionState | undefined> {
+  const key = normalizeCode(code);
   const redis = await getRedis();
   if (redis) {
-    const data = await redis.get(KEY_PREFIX + code);
+    const data = await redis.get(KEY_PREFIX + key);
     if (!data) return undefined;
     return typeof data === "string" ? (JSON.parse(data) as SessionState) : (data as SessionState);
   }
-  return sessions.get(code);
+  return sessions.get(key);
 }
 
 export async function setInStore(session: SessionState): Promise<void> {
