@@ -4,7 +4,7 @@
  */
 import type { PublicSessionState, SeedBoard } from "./types";
 
-const POLL_INTERVAL = 400;
+const POLL_INTERVAL = 200;
 
 async function api<T>(url: string, options?: RequestInit): Promise<T> {
   const res = await fetch(url, {

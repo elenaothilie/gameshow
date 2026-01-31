@@ -97,13 +97,6 @@ export default function HostPage() {
   }, [session, selectedQuestion]);
 
   React.useEffect(() => {
-    if (!selectedQuestion || !sessionCode || !hostPin) return;
-    if (!selectedQuestion.used) {
-      hostAction({ action: "openBuzzing", questionId: selectedQuestion.id });
-    }
-  }, [selectedQuestion?.id]);
-
-  React.useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       if (e.key.toLowerCase() === "f") toggleFullscreen();
     };
@@ -176,6 +169,16 @@ export default function HostPage() {
     if (!editorBoard) return;
     hostAction({ action: "updateBoard", board: editorBoard });
     setEditing(false);
+  };
+
+  const handleSelectQuestion = (question: Question) => {
+    setSelectedQuestion(question);
+    if (sessionCode && hostPin && !question.used) {
+      api.hostAction(sessionCode, hostPin, {
+        action: "openBuzzing",
+        questionId: question.id,
+      }).then(({ state }) => setSession(state)).catch((err) => console.error("Open buzzing failed:", err));
+    }
   };
 
   const onScoreQuestion = (teamId: string, result: "correct" | "wrong") => {
@@ -406,7 +409,7 @@ export default function HostPage() {
           <Board
             board={session.board}
             activeQuestionId={session.activeQuestionId}
-            onSelectQuestion={(q) => setSelectedQuestion(q)}
+            onSelectQuestion={handleSelectQuestion}
           />
 
           {!isFullscreen && (
