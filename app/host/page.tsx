@@ -181,9 +181,9 @@ export default function HostPage() {
     }
   };
 
-  const handleCloseModal = () => {
+  const handleCloseModal = async () => {
     setSelectedQuestion(null);
-    hostAction({ action: "lockBuzzing" });
+    await hostAction({ action: "lockBuzzing" });
   };
 
   const onScoreQuestion = async (result: "correct" | "wrong") => {
@@ -191,9 +191,12 @@ export default function HostPage() {
     const winnerId = session.winnerTeamId;
     if (result === "correct") {
       playCorrectSound();
-      await hostAction({ action: "updateScore", teamId: winnerId, delta: selectedQuestion.value });
-      await hostAction({ action: "markQuestionUsed", questionId: selectedQuestion.id, used: true });
-      handleCloseModal();
+      await hostAction({
+        action: "scoreCorrectAndClose",
+        teamId: winnerId,
+        questionId: selectedQuestion.id,
+      });
+      setSelectedQuestion(null);
     } else {
       playWrongSound();
       await hostAction({
@@ -440,9 +443,13 @@ export default function HostPage() {
           teams={session.teams}
           winnerTeamId={session.winnerTeamId}
           onClose={handleCloseModal}
-          onMarkUsed={(used) => {
-            markQuestionUsed(selectedQuestion.id, used);
-            if (used) handleCloseModal();
+          onMarkUsed={async (used) => {
+            if (used) {
+              await hostAction({ action: "markQuestionUsed", questionId: selectedQuestion.id, used: true });
+              await handleCloseModal();
+            } else {
+              markQuestionUsed(selectedQuestion.id, used);
+            }
           }}
           onScore={onScoreQuestion}
         />

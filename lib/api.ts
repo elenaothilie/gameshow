@@ -78,6 +78,7 @@ type HostAction =
   | { action: "updateTeam"; teamId: string; patch: { name?: string; color?: string } }
   | { action: "removeTeam"; teamId: string }
   | { action: "updateScore"; teamId: string; delta: number }
+  | { action: "scoreCorrectAndClose"; teamId: string; questionId: string }
   | { action: "scoreWrongReopen"; teamId: string; questionId: string }
   | { action: "updateBoard"; board: SeedBoard }
   | {

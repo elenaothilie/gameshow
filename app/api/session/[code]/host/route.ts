@@ -124,6 +124,22 @@ export async function POST(
           }
         }
         break;
+      case "scoreCorrectAndClose":
+        if (body.teamId != null && body.questionId != null) {
+          const team = session.teams.find((t) => t.id === body.teamId);
+          const q = session.board
+            .flatMap((c) => c.questions)
+            .find((qu) => qu.id === body.questionId);
+          if (team && q) {
+            team.score += q.value;
+            q.used = true;
+          }
+          session.buzzingOpen = false;
+          session.winnerTeamId = undefined;
+          session.buzzes = [];
+          session.activeQuestionId = undefined;
+        }
+        break;
       default:
         return NextResponse.json({ error: "Unknown action" }, { status: 400 });
     }
