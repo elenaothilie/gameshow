@@ -421,6 +421,7 @@ export default function HostPage() {
         <QuestionModal
           question={selectedQuestion}
           teams={session.teams}
+          winnerTeamId={session.winnerTeamId}
           onClose={() => setSelectedQuestion(null)}
           onMarkUsed={(used) => {
             markQuestionUsed(selectedQuestion.id, used);

@@ -59,6 +59,17 @@ export async function teamJoin(
   });
 }
 
+export async function buzz(
+  code: string,
+  teamId: string
+): Promise<{ status: string; winnerTeamId?: string }> {
+  const cleanCode = code.trim().toUpperCase();
+  return api(`/api/session/${encodeURIComponent(cleanCode)}/buzz`, {
+    method: "POST",
+    body: JSON.stringify({ teamId }),
+  });
+}
+
 type HostAction =
   | { action: "openBuzzing"; questionId?: string }
   | { action: "lockBuzzing" }

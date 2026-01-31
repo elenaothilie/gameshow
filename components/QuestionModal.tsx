@@ -8,6 +8,7 @@ import type { Question, Team } from "@/lib/types";
 type QuestionModalProps = {
   question: Question;
   teams: Team[];
+  winnerTeamId?: string;
   onClose: () => void;
   onMarkUsed: (used: boolean) => void;
   onScore: (teamId: string, result: "correct" | "wrong") => void;
@@ -16,14 +17,19 @@ type QuestionModalProps = {
 export function QuestionModal({
   question,
   teams,
+  winnerTeamId,
   onClose,
   onMarkUsed,
   onScore,
 }: QuestionModalProps) {
   const [showAnswer, setShowAnswer] = React.useState(false);
   const [scoreTeamId, setScoreTeamId] = React.useState<string | undefined>(
-    undefined
+    winnerTeamId
   );
+
+  React.useEffect(() => {
+    setScoreTeamId((prev) => winnerTeamId ?? prev);
+  }, [winnerTeamId]);
 
   return (
     <div className="fixed inset-0 z-40 flex items-center justify-center bg-slate-950/80 p-6">
