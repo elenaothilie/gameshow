@@ -8,41 +8,22 @@ import type { Question, Team } from "@/lib/types";
 type QuestionModalProps = {
   question: Question;
   teams: Team[];
-  buzzingOpen: boolean;
-  winnerTeamId?: string;
-  buzzes: Array<{ teamId: string; timestamp: number }>;
   onClose: () => void;
-  onOpenBuzzing: () => void;
-  onLockBuzzing: () => void;
-  onResetBuzzers: () => void;
   onMarkUsed: (used: boolean) => void;
   onScore: (teamId: string, result: "correct" | "wrong") => void;
-  wrongPenaltyMode: "subtract" | "zero";
 };
 
 export function QuestionModal({
   question,
   teams,
-  buzzingOpen,
-  winnerTeamId,
-  buzzes,
   onClose,
-  onOpenBuzzing,
-  onLockBuzzing,
-  onResetBuzzers,
   onMarkUsed,
   onScore,
-  wrongPenaltyMode,
 }: QuestionModalProps) {
-  const winner = teams.find((team) => team.id === winnerTeamId);
   const [showAnswer, setShowAnswer] = React.useState(false);
   const [scoreTeamId, setScoreTeamId] = React.useState<string | undefined>(
-    winnerTeamId
+    undefined
   );
-
-  React.useEffect(() => {
-    setScoreTeamId(winnerTeamId);
-  }, [winnerTeamId]);
 
   return (
     <div className="fixed inset-0 z-40 flex items-center justify-center bg-slate-950/80 p-6">
@@ -112,83 +93,14 @@ export function QuestionModal({
           <div className="space-y-4">
             <div className="rounded-2xl border border-white/10 bg-slate-900/60 p-4">
               <div className="text-sm uppercase tracking-[0.25em] text-cyan-200">
-                Buzzing
-              </div>
-              <div className="mt-3 flex flex-wrap gap-2">
-                <button
-                  type="button"
-                  onClick={onOpenBuzzing}
-                  className="rounded-full bg-cyan-500/20 px-4 py-2 text-xs uppercase tracking-widest text-cyan-100 hover:bg-cyan-400/30"
-                >
-                  Open Buzzing
-                </button>
-                <button
-                  type="button"
-                  onClick={onLockBuzzing}
-                  className="rounded-full bg-yellow-500/20 px-4 py-2 text-xs uppercase tracking-widest text-yellow-100 hover:bg-yellow-400/30"
-                >
-                  Lock Buzzing
-                </button>
-                <button
-                  type="button"
-                  onClick={onResetBuzzers}
-                  className="rounded-full bg-white/10 px-4 py-2 text-xs uppercase tracking-widest text-white/70 hover:bg-white/20"
-                >
-                  Reset Buzzers
-                </button>
-              </div>
-              <div className="mt-3 text-sm text-white/70">
-                Status:{" "}
-                <span className="text-white">
-                  {question.used
-                    ? "Resolved"
-                    : buzzingOpen
-                    ? "Buzzing open"
-                    : "Locked"}
-                </span>
-              </div>
-            </div>
-
-            <div className="rounded-2xl border border-white/10 bg-slate-900/60 p-4">
-              <div className="text-sm uppercase tracking-[0.25em] text-cyan-200">
-                Buzzer Results
-              </div>
-              {winner ? (
-                <div className="mt-3 rounded-xl border border-cyan-400/30 bg-cyan-500/10 px-4 py-3 text-lg font-semibold text-cyan-100">
-                  Winner: {winner.name}
-                </div>
-              ) : (
-                <div className="mt-3 text-sm text-white/60">No buzzes yet.</div>
-              )}
-              <ul className="mt-3 space-y-2 text-sm text-white/70">
-                {buzzes.map((buzz, index) => {
-                  const team = teams.find((entry) => entry.id === buzz.teamId);
-                  const base = buzzes[0]?.timestamp ?? buzz.timestamp;
-                  const offset = buzz.timestamp - base;
-                  return (
-                    <li key={`${buzz.teamId}-${buzz.timestamp}`}>
-                      {index + 1}. {team?.name ?? "Unknown Team"}{" "}
-                      <span className="text-white/40">
-                        (+{offset}ms)
-                      </span>
-                    </li>
-                  );
-                })}
-              </ul>
-            </div>
-
-            <div className="rounded-2xl border border-white/10 bg-slate-900/60 p-4">
-              <div className="text-sm uppercase tracking-[0.25em] text-cyan-200">
                 Scoring
               </div>
               <select
                 value={scoreTeamId ?? ""}
-                onChange={(event) => setScoreTeamId(event.target.value)}
+                onChange={(e) => setScoreTeamId(e.target.value || undefined)}
                 className="mt-3 w-full rounded-xl border border-white/10 bg-slate-950/60 px-3 py-2 text-sm text-white"
               >
-                <option value="" disabled>
-                  Select team
-                </option>
+                <option value="">Select team</option>
                 {teams.map((team) => (
                   <option key={team.id} value={team.id}>
                     {team.name}
@@ -210,7 +122,7 @@ export function QuestionModal({
                   onClick={() => scoreTeamId && onScore(scoreTeamId, "wrong")}
                   className="rounded-full bg-red-500/20 px-4 py-2 text-xs uppercase tracking-widest text-red-200 hover:bg-red-400/30 disabled:cursor-not-allowed disabled:opacity-40"
                 >
-                  Wrong ({wrongPenaltyMode === "zero" ? "+0" : `-${question.value}`})
+                  Wrong (-{question.value})
                 </button>
               </div>
               <button
@@ -227,4 +139,3 @@ export function QuestionModal({
     </div>
   );
 }
-

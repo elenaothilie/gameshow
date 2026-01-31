@@ -1,15 +1,12 @@
 /**
- * Client-side API for session operations. Uses REST + polling instead of Socket.IO
- * for Vercel/serverless compatibility.
+ * Client-side API for session operations. Uses REST + polling for
+ * Vercel/serverless compatibility.
  */
 import type { PublicSessionState, SeedBoard } from "./types";
 
 const POLL_INTERVAL = 400;
 
-async function api<T>(
-  url: string,
-  options?: RequestInit
-): Promise<T> {
+async function api<T>(url: string, options?: RequestInit): Promise<T> {
   const res = await fetch(url, {
     ...options,
     headers: {
@@ -32,12 +29,14 @@ export async function createSession(): Promise<{
   return api("/api/session/create", { method: "POST" });
 }
 
-export async function hostJoin(code: string, pin: string): Promise<{
-  state: PublicSessionState;
-}> {
+export async function hostJoin(
+  code: string,
+  pin: string
+): Promise<{ state: PublicSessionState }> {
+  const cleanCode = code.trim().toUpperCase();
   return api("/api/session/host-join", {
     method: "POST",
-    body: JSON.stringify({ code, pin }),
+    body: JSON.stringify({ code: cleanCode, pin }),
   });
 }
 
@@ -60,17 +59,6 @@ export async function teamJoin(
   });
 }
 
-export async function buzz(
-  code: string,
-  teamId: string
-): Promise<{ status: string; winnerTeamId?: string }> {
-  const cleanCode = code.trim().toUpperCase();
-  return api(`/api/session/${encodeURIComponent(cleanCode)}/buzz`, {
-    method: "POST",
-    body: JSON.stringify({ teamId }),
-  });
-}
-
 type HostAction =
   | { action: "openBuzzing"; questionId?: string }
   | { action: "lockBuzzing" }
@@ -80,26 +68,28 @@ type HostAction =
   | { action: "removeTeam"; teamId: string }
   | { action: "updateScore"; teamId: string; delta: number }
   | { action: "updateBoard"; board: SeedBoard }
-  | { action: "markQuestionUsed"; questionId: string; used: boolean }; // sent as questionIdUsed to server
+  | {
+      action: "markQuestionUsed";
+      questionId: string;
+      used: boolean;
+    };
 
 export async function hostAction(
   code: string,
   pin: string,
   payload: HostAction
 ): Promise<{ state: PublicSessionState }> {
+  const cleanCode = code.trim().toUpperCase();
   const body =
     payload.action === "markQuestionUsed"
-      ? { code, pin, ...payload, questionIdUsed: payload.questionId }
-      : { code, pin, ...payload };
-  return api(`/api/session/${code}/host`, {
+      ? { code: cleanCode, pin, ...payload, questionIdUsed: payload.questionId }
+      : { code: cleanCode, pin, ...payload };
+  return api(`/api/session/${encodeURIComponent(cleanCode)}/host`, {
     method: "POST",
     body: JSON.stringify(body),
   });
 }
 
-/**
- * Poll for session state updates. Returns a cleanup function.
- */
 export function pollSession(
   code: string,
   onState: (state: PublicSessionState) => void,
