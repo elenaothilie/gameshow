@@ -6,7 +6,7 @@ import { Board } from "@/components/Board";
 import { NowPlaying } from "@/components/NowPlaying";
 import { QuestionModal } from "@/components/QuestionModal";
 import { TeamList } from "@/components/TeamList";
-import { getSocket } from "@/lib/socket";
+import * as api from "@/lib/api";
 import { playBuzzerSound, playCorrectSound, playWrongSound } from "@/lib/sounds";
 import type { PublicSessionState, Question, SeedBoard } from "@/lib/types";
 
@@ -30,9 +30,6 @@ function boardToSeed(board: PublicSessionState["board"]): SeedBoard {
 
 export default function HostPage() {
   const reduceMotion = useReducedMotion();
-  const socketRef = React.useRef<Awaited<ReturnType<typeof getSocket>> | null>(
-    null
-  );
   const [session, setSession] = React.useState<PublicSessionState | null>(null);
   const [sessionCode, setSessionCode] = React.useState<string>("");
   const [hostPin, setHostPin] = React.useState<string>("");
@@ -43,9 +40,9 @@ export default function HostPage() {
   const [soundOn, setSoundOn] = React.useState(true);
   const [editing, setEditing] = React.useState(false);
   const [editorBoard, setEditorBoard] = React.useState<SeedBoard | null>(null);
-  const [socketReady, setSocketReady] = React.useState(false);
-  const [socketError, setSocketError] = React.useState<string | null>(null);
   const [createError, setCreateError] = React.useState<string | null>(null);
+  const [creating, setCreating] = React.useState(false);
+  const [joinError, setJoinError] = React.useState<string | null>(null);
 
   React.useEffect(() => {
     if (typeof window === "undefined") return;
@@ -61,62 +58,25 @@ export default function HostPage() {
     }
   }, []);
 
+  // Poll for session updates when we have an active session
   React.useEffect(() => {
+    if (!sessionCode || !session) return;
+    return api.pollSession(sessionCode, setSession);
+  }, [sessionCode, !!session]);
+
+  // Rejoin: try hostJoin when we have stored code/pin but no session
+  React.useEffect(() => {
+    if (!sessionCode || !hostPin || session) return;
     let active = true;
-    let socketCleanup: (() => void) | undefined;
-    setSocketError(null);
-    setSocketReady(false);
-    getSocket().then((socket) => {
-      if (!active) return;
-      socketRef.current = socket;
-      socket.on("state:sync", (state: PublicSessionState) => {
-        setSession(state);
+    api.hostJoin(sessionCode, hostPin)
+      .then(({ state }) => {
+        if (active) setSession(state);
+      })
+      .catch(() => {
+        // Session may not exist yet, that's ok
       });
-
-      const onConnect = () => {
-        if (active) {
-          setSocketReady(true);
-          setSocketError(null);
-        }
-      };
-      const onConnectError = () => {
-        if (active) {
-          setSocketReady(false);
-          setSocketError("Could not connect. Make sure the dev server is running.");
-        }
-      };
-
-      if (socket.connected) {
-        onConnect();
-      } else {
-        socket.once("connect", onConnect);
-        socket.once("connect_error", onConnectError);
-        socketCleanup = () => {
-          socket.off("connect", onConnect);
-          socket.off("connect_error", onConnectError);
-        };
-      }
-
-      if (sessionCode && hostPin) {
-        socket.emit(
-          "host:join",
-          { code: sessionCode, pin: hostPin },
-          (response: { error?: string; state?: PublicSessionState }) => {
-            if (response?.state) {
-              setSession(response.state);
-            }
-          }
-        );
-      }
-    }).catch(() => {
-      if (active) {
-        setSocketError("Failed to initialize connection.");
-      }
-    });
     return () => {
       active = false;
-      socketCleanup?.();
-      socketRef.current?.off("state:sync");
     };
   }, [sessionCode, hostPin]);
 
@@ -168,102 +128,86 @@ export default function HostPage() {
     }
   };
 
-  const createSession = () => {
+  const handleCreateSession = async () => {
     setCreateError(null);
-    const sock = socketRef.current;
-    if (!sock) {
-      setCreateError("Not connected yet. Please wait...");
-      return;
-    }
-    sock.emit("host:createSession", {}, (response: { code?: string; pin?: string; state?: PublicSessionState } | null) => {
-      if (!response?.code) {
-        setCreateError("Session creation failed. Try again.");
-        return;
-      }
-      setSessionCode(response.code);
-      setHostPin(response.pin);
-      setSession(response.state);
+    setCreating(true);
+    try {
+      const { code, pin, state } = await api.createSession();
+      setSessionCode(code);
+      setHostPin(pin);
+      setSession(state);
       localStorage.setItem(
         STORAGE_KEY,
-        JSON.stringify({ code: response.code, pin: response.pin })
+        JSON.stringify({ code, pin })
       );
-    });
+    } catch (err) {
+      setCreateError("Session creation failed. Try again.");
+    } finally {
+      setCreating(false);
+    }
+  };
+
+  const handleJoinSession = async () => {
+    setJoinError(null);
+    try {
+      const { state } = await api.hostJoin(sessionCode, hostPin);
+      setSession(state);
+      localStorage.setItem(
+        STORAGE_KEY,
+        JSON.stringify({ code: sessionCode, pin: hostPin })
+      );
+    } catch (err) {
+      setJoinError("Could not join. Check code and pin.");
+    }
+  };
+
+  const hostAction = async (
+    payload: Parameters<typeof api.hostAction>[2]
+  ) => {
+    if (!sessionCode || !hostPin) return;
+    try {
+      const { state } = await api.hostAction(sessionCode, hostPin, payload);
+      setSession(state);
+    } catch (err) {
+      console.error("Host action failed:", err);
+    }
   };
 
   const openBuzzing = (questionId?: string) => {
-    if (!sessionCode || !hostPin) return;
-    socketRef.current?.emit("host:openBuzzing", {
-      code: sessionCode,
-      pin: hostPin,
-      questionId,
-    });
+    hostAction({ action: "openBuzzing", questionId });
   };
 
   const lockBuzzing = () => {
-    if (!sessionCode || !hostPin) return;
-    socketRef.current?.emit("host:lockBuzzing", { code: sessionCode, pin: hostPin });
+    hostAction({ action: "lockBuzzing" });
   };
 
   const resetBuzzers = () => {
-    if (!sessionCode || !hostPin) return;
-    socketRef.current?.emit("host:resetBuzzers", { code: sessionCode, pin: hostPin });
+    hostAction({ action: "resetBuzzers" });
   };
 
   const updateSettings = (settings: Partial<PublicSessionState["settings"]>) => {
-    if (!sessionCode || !hostPin) return;
-    socketRef.current?.emit("host:updateSettings", {
-      code: sessionCode,
-      pin: hostPin,
-      settings,
-    });
+    hostAction({ action: "updateSettings", settings });
   };
 
   const updateTeam = (teamId: string, patch: { name?: string; color?: string }) => {
-    if (!sessionCode || !hostPin) return;
-    socketRef.current?.emit("host:updateTeam", {
-      code: sessionCode,
-      pin: hostPin,
-      teamId,
-      patch,
-    });
+    hostAction({ action: "updateTeam", teamId, patch });
   };
 
   const removeTeam = (teamId: string) => {
-    if (!sessionCode || !hostPin) return;
-    socketRef.current?.emit("host:removeTeam", {
-      code: sessionCode,
-      pin: hostPin,
-      teamId,
-    });
+    hostAction({ action: "removeTeam", teamId });
   };
 
   const updateScore = (teamId: string, delta: number) => {
-    if (!sessionCode || !hostPin) return;
-    socketRef.current?.emit("host:updateScore", {
-      code: sessionCode,
-      pin: hostPin,
-      teamId,
-      delta,
-    });
+    hostAction({ action: "updateScore", teamId, delta });
   };
 
   const markQuestionUsed = (questionId: string, used: boolean) => {
-    if (!sessionCode || !hostPin) return;
-    socketRef.current?.emit("host:markQuestionUsed", {
-      code: sessionCode,
-      pin: hostPin,
-      questionId,
-      used,
-    });
+    hostAction({ action: "markQuestionUsed", questionId, used });
   };
 
   const applyBoardEdits = () => {
-    if (!sessionCode || !hostPin || !editorBoard) return;
-    socketRef.current?.emit("host:updateBoard", {
-      code: sessionCode,
-      pin: hostPin,
-      board: editorBoard,
-    });
+    if (!editorBoard) return;
+    hostAction({ action: "updateBoard", board: editorBoard });
     setEditing(false);
   };
 
@@ -453,23 +397,23 @@ export default function HostPage() {
           <p className="text-white/60">
             Start a new session to generate a join code for teams.
           </p>
-          {socketError && (
-            <p className="rounded-xl border border-amber-500/40 bg-amber-500/10 px-4 py-3 text-amber-200">
-              {socketError}
-            </p>
-          )}
           {createError && (
             <p className="rounded-xl border border-amber-500/40 bg-amber-500/10 px-4 py-3 text-amber-200">
               {createError}
             </p>
           )}
+          {joinError && (
+            <p className="rounded-xl border border-amber-500/40 bg-amber-500/10 px-4 py-3 text-amber-200">
+              {joinError}
+            </p>
+          )}
           <button
             type="button"
-            onClick={createSession}
-            disabled={!socketReady}
+            onClick={handleCreateSession}
+            disabled={creating}
             className="rounded-full bg-cyan-500/30 px-6 py-3 text-sm uppercase tracking-widest text-cyan-100 hover:bg-cyan-400/40 disabled:cursor-not-allowed disabled:opacity-50"
           >
-            {socketReady ? "Create Session" : "Connecting..."}
+            {creating ? "Creating..." : "Create Session"}
           </button>
           <div className="mt-8 rounded-2xl border border-white/10 bg-slate-900/60 p-6">
             <div className="text-xs uppercase tracking-[0.35em] text-cyan-200">
@@ -491,21 +435,7 @@ export default function HostPage() {
             </div>
             <button
               type="button"
-              onClick={() =>
-                socketRef.current?.emit(
-                  "host:join",
-                  { code: sessionCode, pin: hostPin },
-                  (response: { error?: string; state?: PublicSessionState }) => {
-                    if (response?.state) {
-                      setSession(response.state);
-                      localStorage.setItem(
-                        STORAGE_KEY,
-                        JSON.stringify({ code: sessionCode, pin: hostPin })
-                      );
-                    }
-                  }
-                )
-              }
+              onClick={handleJoinSession}
               className="mt-4 rounded-full border border-white/10 px-5 py-2 text-xs uppercase tracking-widest text-white/70 hover:bg-white/10"
             >
               Join Session

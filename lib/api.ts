@@ -77,16 +77,20 @@ type HostAction =
   | { action: "removeTeam"; teamId: string }
   | { action: "updateScore"; teamId: string; delta: number }
   | { action: "updateBoard"; board: SeedBoard }
-  | { action: "markQuestionUsed"; questionId: string; used: boolean };
+  | { action: "markQuestionUsed"; questionId: string; used: boolean }; // sent as questionIdUsed to server
 
 export async function hostAction(
   code: string,
   pin: string,
   payload: HostAction
 ): Promise<{ state: PublicSessionState }> {
+  const body =
+    payload.action === "markQuestionUsed"
+      ? { code, pin, ...payload, questionIdUsed: payload.questionId }
+      : { code, pin, ...payload };
   return api(`/api/session/${code}/host`, {
     method: "POST",
-    body: JSON.stringify({ code, pin, ...payload }),
+    body: JSON.stringify(body),
   });
 }
 

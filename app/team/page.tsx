@@ -2,7 +2,7 @@
 
 import React from "react";
 import { motion } from "framer-motion";
-import { getSocket } from "@/lib/socket";
+import * as api from "@/lib/api";
 import { playBuzzerSound } from "@/lib/sounds";
 import type { PublicSessionState } from "@/lib/types";
 
@@ -10,9 +10,6 @@ const STORAGE_KEY = "jeopardy:team";
 const SOUND_KEY = "jeopardy:team-sound";
 
 export default function TeamPage() {
-  const socketRef = React.useRef<Awaited<ReturnType<typeof getSocket>> | null>(
-    null
-  );
   const [session, setSession] = React.useState<PublicSessionState | null>(null);
   const [sessionCode, setSessionCode] = React.useState("");
   const [teamName, setTeamName] = React.useState("");
@@ -21,6 +18,8 @@ export default function TeamPage() {
     null
   );
   const [soundOn, setSoundOn] = React.useState(true);
+  const [joining, setJoining] = React.useState(false);
+  const [joinError, setJoinError] = React.useState<string | null>(null);
 
   React.useEffect(() => {
     if (typeof window === "undefined") return;
@@ -39,42 +38,11 @@ export default function TeamPage() {
     }
   }, []);
 
+  // Poll for session updates when we have joined
   React.useEffect(() => {
-    let active = true;
-    getSocket().then((socket) => {
-      if (!active) return;
-      socketRef.current = socket;
-      socket.on("state:sync", (state: PublicSessionState) => {
-        setSession(state);
-      });
-
-      if (sessionCode && teamName) {
-        socket.emit(
-          "team:join",
-          { code: sessionCode, teamName, teamId },
-          (response: { error?: string; state?: PublicSessionState; teamId?: string }) => {
-            if (response?.state && response?.teamId) {
-              setSession(response.state);
-              setTeamId(response.teamId);
-              localStorage.setItem(
-                STORAGE_KEY,
-                JSON.stringify({
-                  code: sessionCode,
-                  name: teamName,
-                  teamId: response.teamId,
-                })
-              );
-            }
-          }
-        );
-      }
-    });
-
-    return () => {
-      active = false;
-      socketRef.current?.off("state:sync");
-    };
-  }, [sessionCode, teamName, teamId]);
+    if (!sessionCode || !session) return;
+    return api.pollSession(sessionCode, setSession);
+  }, [sessionCode, !!session]);
 
   React.useEffect(() => {
     if (!session?.buzzingOpen) {
@@ -82,49 +50,53 @@ export default function TeamPage() {
     }
   }, [session?.buzzingOpen, session?.activeQuestionId]);
 
-  const joinSession = () => {
+  const joinSession = async () => {
     if (!sessionCode || !teamName) return;
-    socketRef.current?.emit(
-      "team:join",
-      { code: sessionCode, teamName, teamId },
-      (response: { error?: string; state?: PublicSessionState; teamId?: string }) => {
-        if (response?.state && response?.teamId) {
-          setSession(response.state);
-          setTeamId(response.teamId);
-          localStorage.setItem(
-            STORAGE_KEY,
-            JSON.stringify({
-              code: sessionCode,
-              name: teamName,
-              teamId: response.teamId,
-            })
-          );
-        }
-      }
-    );
+    setJoinError(null);
+    setJoining(true);
+    try {
+      const { teamId: newTeamId, state } = await api.teamJoin(
+        sessionCode,
+        teamName,
+        teamId ?? undefined
+      );
+      setSession(state);
+      setTeamId(newTeamId);
+      localStorage.setItem(
+        STORAGE_KEY,
+        JSON.stringify({
+          code: sessionCode,
+          name: teamName,
+          teamId: newTeamId,
+        })
+      );
+    } catch (err) {
+      setJoinError("Could not join. Check the code and try again.");
+    } finally {
+      setJoining(false);
+    }
   };
 
-  const buzz = () => {
+  const buzz = async () => {
     if (!sessionCode || !teamId) return;
-    socketRef.current?.emit(
-      "team:buzz",
-      { code: sessionCode, teamId },
-      (response: { status: string; winnerTeamId?: string }) => {
-        if (response.status === "accepted") {
-          const isWinner = response.winnerTeamId === teamId;
-          setBuzzStatus(isWinner ? "first" : "late");
-          if (isWinner && soundOn) {
-            playBuzzerSound();
-            navigator.vibrate?.(150);
-          }
-        } else if (response.status === "locked") {
-          setBuzzStatus("late");
+    try {
+      const response = await api.buzz(sessionCode, teamId);
+      if (response.status === "accepted") {
+        const isWinner = response.winnerTeamId === teamId;
+        setBuzzStatus(isWinner ? "first" : "late");
+        if (isWinner && soundOn) {
+          playBuzzerSound();
+          navigator.vibrate?.(150);
         }
+      } else if (response.status === "locked") {
+        setBuzzStatus("late");
       }
-    );
+    } catch (err) {
+      console.error("Buzz failed:", err);
+    }
   };
 
-  const hasBuzzed = session?.buzzes.some((buzz) => buzz.teamId === teamId) ?? false;
+  const hasBuzzed = session?.buzzes.some((b) => b.teamId === teamId) ?? false;
   const isWinner = session?.winnerTeamId === teamId;
 
   if (!session) {
@@ -134,6 +106,11 @@ export default function TeamPage() {
           <h1 className="text-3xl font-extrabold text-cyan-100">
             Join Jeopardy Round 1
           </h1>
+          {joinError && (
+            <p className="rounded-xl border border-amber-500/40 bg-amber-500/10 px-4 py-3 text-amber-200">
+              {joinError}
+            </p>
+          )}
           <div className="space-y-3">
             <label className="block text-xs uppercase tracking-[0.35em] text-cyan-200">
               Join Code
@@ -157,9 +134,10 @@ export default function TeamPage() {
           <button
             type="button"
             onClick={joinSession}
-            className="w-full rounded-full bg-cyan-500/30 py-3 text-sm uppercase tracking-widest text-cyan-100 hover:bg-cyan-400/40"
+            disabled={joining}
+            className="w-full rounded-full bg-cyan-500/30 py-3 text-sm uppercase tracking-widest text-cyan-100 hover:bg-cyan-400/40 disabled:cursor-not-allowed disabled:opacity-50"
           >
-            Join Game
+            {joining ? "Joining..." : "Join Game"}
           </button>
           <button
             type="button"
