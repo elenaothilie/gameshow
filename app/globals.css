@@ -1,0 +1,21 @@
+@import "tailwindcss";
+
+html,
+body {
+  background-color: #0f172a !important;
+  color: #f8fafc !important;
+  min-height: 100%;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

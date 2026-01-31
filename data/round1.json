@@ -1,0 +1,184 @@
+{
+  "categories": [
+    {
+      "name": "World Capitals",
+      "questions": [
+        {
+          "value": 100,
+          "questionText": "This city is the capital of Japan.",
+          "answerText": "What is Tokyo?"
+        },
+        {
+          "value": 200,
+          "questionText": "This South American capital sits at the foot of Mount Rucu Pichincha.",
+          "answerText": "What is Quito?"
+        },
+        {
+          "value": 300,
+          "questionText": "Canberra is the capital of this country.",
+          "answerText": "What is Australia?"
+        },
+        {
+          "value": 400,
+          "questionText": "This European capital is known for the Charles Bridge and Prague Castle.",
+          "answerText": "What is Prague?"
+        },
+        {
+          "value": 500,
+          "questionText": "This African capital is located on the Nile and was home to ancient Meroe.",
+          "answerText": "What is Khartoum?"
+        }
+      ]
+    },
+    {
+      "name": "Science & Space",
+      "questions": [
+        {
+          "value": 100,
+          "questionText": "The force that keeps planets in orbit around the sun.",
+          "answerText": "What is gravity?"
+        },
+        {
+          "value": 200,
+          "questionText": "Our galaxy is called the ____ Way.",
+          "answerText": "What is the Milky Way?"
+        },
+        {
+          "value": 300,
+          "questionText": "This planet is known as the Red Planet.",
+          "answerText": "What is Mars?"
+        },
+        {
+          "value": 400,
+          "questionText": "The process plants use to convert sunlight into energy.",
+          "answerText": "What is photosynthesis?"
+        },
+        {
+          "value": 500,
+          "questionText": "This is the largest planet in our solar system.",
+          "answerText": "What is Jupiter?"
+        }
+      ]
+    },
+    {
+      "name": "Pop Culture",
+      "questions": [
+        {
+          "value": 100,
+          "questionText": "This animated family lives in Springfield.",
+          "answerText": "Who are the Simpsons?"
+        },
+        {
+          "value": 200,
+          "questionText": "The wizarding school attended by Harry Potter.",
+          "answerText": "What is Hogwarts?"
+        },
+        {
+          "value": 300,
+          "questionText": "This streaming service originally mailed DVDs.",
+          "answerText": "What is Netflix?"
+        },
+        {
+          "value": 400,
+          "questionText": "She sang the hit song “Shake It Off.”",
+          "answerText": "Who is Taylor Swift?"
+        },
+        {
+          "value": 500,
+          "questionText": "This superhero team includes Iron Man, Thor, and Hulk.",
+          "answerText": "Who are the Avengers?"
+        }
+      ]
+    },
+    {
+      "name": "History",
+      "questions": [
+        {
+          "value": 100,
+          "questionText": "The ancient Egyptians built these giant tombs.",
+          "answerText": "What are pyramids?"
+        },
+        {
+          "value": 200,
+          "questionText": "The year the Berlin Wall fell.",
+          "answerText": "What is 1989?"
+        },
+        {
+          "value": 300,
+          "questionText": "The ship that carried the Pilgrims to America in 1620.",
+          "answerText": "What is the Mayflower?"
+        },
+        {
+          "value": 400,
+          "questionText": "This U.S. document begins, “We the People.”",
+          "answerText": "What is the Constitution?"
+        },
+        {
+          "value": 500,
+          "questionText": "The ancient city buried by Mount Vesuvius.",
+          "answerText": "What is Pompeii?"
+        }
+      ]
+    },
+    {
+      "name": "Sports",
+      "questions": [
+        {
+          "value": 100,
+          "questionText": "This sport uses a bat, a ball, and bases.",
+          "answerText": "What is baseball?"
+        },
+        {
+          "value": 200,
+          "questionText": "The trophy awarded to the NHL champion.",
+          "answerText": "What is the Stanley Cup?"
+        },
+        {
+          "value": 300,
+          "questionText": "This country hosted the 2016 Summer Olympics.",
+          "answerText": "What is Brazil?"
+        },
+        {
+          "value": 400,
+          "questionText": "The Grand Slam tennis tournament played on grass.",
+          "answerText": "What is Wimbledon?"
+        },
+        {
+          "value": 500,
+          "questionText": "The race known as “The Run for the Roses.”",
+          "answerText": "What is the Kentucky Derby?"
+        }
+      ]
+    },
+    {
+      "name": "Arts & Literature",
+      "questions": [
+        {
+          "value": 100,
+          "questionText": "This playwright wrote “Romeo and Juliet.”",
+          "answerText": "Who is William Shakespeare?"
+        },
+        {
+          "value": 200,
+          "questionText": "The author of “1984.”",
+          "answerText": "Who is George Orwell?"
+        },
+        {
+          "value": 300,
+          "questionText": "This painting by Leonardo da Vinci features a mysterious smile.",
+          "answerText": "What is the Mona Lisa?"
+        },
+        {
+          "value": 400,
+          "questionText": "The first line of “Moby-Dick” is “Call me ____.”",
+          "answerText": "Who is Ishmael?"
+        },
+        {
+          "value": 500,
+          "questionText": "This art movement is associated with Claude Monet.",
+          "answerText": "What is Impressionism?"
+        }
+      ]
+    }
+  ]
+}
