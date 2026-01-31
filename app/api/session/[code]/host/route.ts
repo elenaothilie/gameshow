@@ -138,6 +138,7 @@ export async function POST(
           session.winnerTeamId = undefined;
           session.buzzes = [];
           session.activeQuestionId = undefined;
+          session.attemptedWrongTeamIds = [];
         }
         break;
       default:

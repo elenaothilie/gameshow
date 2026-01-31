@@ -96,6 +96,18 @@ export default function HostPage() {
     }
   }, [session, selectedQuestion]);
 
+  // Ensure buzzing opens when a question is selected (backup in case handleSelectQuestion misses)
+  React.useEffect(() => {
+    if (!selectedQuestion || !session?.code || !hostPin || selectedQuestion.used) return;
+    api
+      .hostAction(session.code, hostPin, {
+        action: "openBuzzing",
+        questionId: selectedQuestion.id,
+      })
+      .then(({ state }) => setSession(state))
+      .catch(() => {});
+  }, [selectedQuestion?.id, session?.code, hostPin]);
+
   React.useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       if (e.key.toLowerCase() === "f") toggleFullscreen();
@@ -173,11 +185,15 @@ export default function HostPage() {
 
   const handleSelectQuestion = (question: Question) => {
     setSelectedQuestion(question);
-    if (sessionCode && hostPin && !question.used) {
-      api.hostAction(sessionCode, hostPin, {
-        action: "openBuzzing",
-        questionId: question.id,
-      }).then(({ state }) => setSession(state)).catch((err) => console.error("Open buzzing failed:", err));
+    if (session && sessionCode && hostPin && !question.used) {
+      const code = session.code;
+      api
+        .hostAction(code, hostPin, {
+          action: "openBuzzing",
+          questionId: question.id,
+        })
+        .then(({ state }) => setSession(state))
+        .catch((err) => console.error("Open buzzing failed:", err));
     }
   };
 
@@ -187,23 +203,34 @@ export default function HostPage() {
   };
 
   const onScoreQuestion = async (result: "correct" | "wrong") => {
-    if (!selectedQuestion || !session?.winnerTeamId) return;
+    if (!selectedQuestion || !session?.winnerTeamId || !sessionCode || !hostPin) return;
     const winnerId = session.winnerTeamId;
+    const code = session.code;
     if (result === "correct") {
       playCorrectSound();
-      await hostAction({
-        action: "scoreCorrectAndClose",
-        teamId: winnerId,
-        questionId: selectedQuestion.id,
-      });
-      setSelectedQuestion(null);
+      try {
+        const { state } = await api.hostAction(code, hostPin, {
+          action: "scoreCorrectAndClose",
+          teamId: winnerId,
+          questionId: selectedQuestion.id,
+        });
+        setSession(state);
+        setSelectedQuestion(null);
+      } catch (err) {
+        console.error("Score correct failed:", err);
+      }
     } else {
       playWrongSound();
-      await hostAction({
-        action: "scoreWrongReopen",
-        teamId: winnerId,
-        questionId: selectedQuestion.id,
-      });
+      try {
+        const { state } = await api.hostAction(code, hostPin, {
+          action: "scoreWrongReopen",
+          teamId: winnerId,
+          questionId: selectedQuestion.id,
+        });
+        setSession(state);
+      } catch (err) {
+        console.error("Score wrong failed:", err);
+      }
     }
   };
 

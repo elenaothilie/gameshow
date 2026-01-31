@@ -4,11 +4,12 @@
  */
 import type { PublicSessionState, SeedBoard } from "./types";
 
-const POLL_INTERVAL = 200;
+const POLL_INTERVAL = 150;
 
 async function api<T>(url: string, options?: RequestInit): Promise<T> {
   const res = await fetch(url, {
     ...options,
+    cache: "no-store",
     headers: {
       "Content-Type": "application/json",
       ...options?.headers,

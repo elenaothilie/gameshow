@@ -38,7 +38,13 @@ export default function TeamPage() {
 
   React.useEffect(() => {
     if (!sessionCode || !session) return;
-    return api.pollSession(sessionCode, setSession);
+    return api.pollSession(sessionCode, (newState) => {
+      setSession((prev) => {
+        if (!prev) return newState;
+        if (newState.lastUpdatedAt >= prev.lastUpdatedAt) return newState;
+        return prev;
+      });
+    });
   }, [sessionCode, !!session]);
 
   const joinSession = async () => {
@@ -199,7 +205,7 @@ export default function TeamPage() {
           </div>
         )}
 
-        {isWinner ? (
+        {isWinner && session.buzzingOpen ? (
           <motion.div
             initial={{ scale: 0.9, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
