@@ -100,6 +100,14 @@ export default function HostPage() {
     }
   }, [session, selectedQuestion]);
 
+  // Auto-open buzzing when a question is opened (and not already used)
+  React.useEffect(() => {
+    if (!selectedQuestion || !sessionCode || !hostPin) return;
+    if (!selectedQuestion.used) {
+      openBuzzing(selectedQuestion.id);
+    }
+  }, [selectedQuestion?.id]);
+
   React.useEffect(() => {
     if (!session?.winnerTeamId) return;
     setShowNowPlaying(true);
