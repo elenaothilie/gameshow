@@ -18,14 +18,36 @@ Or use the [Vercel Upstash Integration](https://vercel.com/integrations/upstash)
 
 ## 2. Push to GitHub
 
+**Important:** Create a **new, empty** repository on GitHub first. Do not initialize it with a README, .gitignore, or license.
+
+### Step-by-step:
+
+1. **Create a new repo on GitHub:**
+   - Go to [github.com/new](https://github.com/new)
+   - Choose a name (e.g. `gameshow`)
+   - Set it to **Public**
+   - Leave "Add a README file" **unchecked**
+   - Click **Create repository**
+
+2. **Push your code** (run these in your project folder):
+
 ```bash
-git init
 git add .
 git commit -m "Initial commit"
 git branch -M main
 git remote add origin https://github.com/YOUR_USERNAME/YOUR_REPO.git
 git push -u origin main
 ```
+
+Replace `YOUR_USERNAME` with your GitHub username and `YOUR_REPO` with the repo name you chose.
+
+### Troubleshooting
+
+- **"Repository already exists" / "remote contains work"** — You may have created the GitHub repo with a README. Either:
+  - Create a **new** empty repo (different name), or
+  - Run `git pull origin main --allow-unrelated-histories` before pushing (only if you want to merge GitHub's README with your code)
+
+- **"Branch 'public' requested"** — Make sure you're on `main`: run `git branch -M main` before pushing.
 
 ## 3. Deploy to Vercel
 
