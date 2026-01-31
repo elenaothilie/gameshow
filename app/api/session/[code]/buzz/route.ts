@@ -32,6 +32,14 @@ export async function POST(
       });
     }
 
+    const attemptedWrong = session.attemptedWrongTeamIds ?? [];
+    if (attemptedWrong.includes(teamId)) {
+      return NextResponse.json({
+        status: "blocked",
+        winnerTeamId: session.winnerTeamId,
+      });
+    }
+
     session.buzzes.push({ teamId, timestamp: Date.now() });
     if (!session.winnerTeamId) {
       session.winnerTeamId = teamId;

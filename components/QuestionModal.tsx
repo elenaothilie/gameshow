@@ -11,7 +11,7 @@ type QuestionModalProps = {
   winnerTeamId?: string;
   onClose: () => void;
   onMarkUsed: (used: boolean) => void;
-  onScore: (teamId: string, result: "correct" | "wrong") => void;
+  onScore: (result: "correct" | "wrong") => void;
 };
 
 export function QuestionModal({
@@ -23,13 +23,6 @@ export function QuestionModal({
   onScore,
 }: QuestionModalProps) {
   const [showAnswer, setShowAnswer] = React.useState(false);
-  const [scoreTeamId, setScoreTeamId] = React.useState<string | undefined>(
-    winnerTeamId
-  );
-
-  React.useEffect(() => {
-    setScoreTeamId((prev) => winnerTeamId ?? prev);
-  }, [winnerTeamId]);
 
   return (
     <div className="fixed inset-0 z-40 flex items-center justify-center bg-slate-950/80 p-6">
@@ -97,35 +90,43 @@ export function QuestionModal({
           </div>
 
           <div className="space-y-4">
+            {winnerTeamId ? (
+              <div className="rounded-2xl border border-cyan-400/30 bg-cyan-500/10 p-4">
+                <div className="text-xs uppercase tracking-[0.25em] text-cyan-200">
+                  First Buzzer
+                </div>
+                <div className="mt-2 flex items-center gap-3">
+                  <div
+                    className="h-4 w-4 rounded-full"
+                    style={{
+                      backgroundColor:
+                        teams.find((t) => t.id === winnerTeamId)?.color ??
+                        "#00E5FF",
+                    }}
+                  />
+                  <span className="text-xl font-bold text-cyan-100">
+                    {teams.find((t) => t.id === winnerTeamId)?.name ?? "Unknown"}
+                  </span>
+                </div>
+              </div>
+            ) : null}
             <div className="rounded-2xl border border-white/10 bg-slate-900/60 p-4">
               <div className="text-sm uppercase tracking-[0.25em] text-cyan-200">
-                Scoring
+                Score First Buzzer
               </div>
-              <select
-                value={scoreTeamId ?? ""}
-                onChange={(e) => setScoreTeamId(e.target.value || undefined)}
-                className="mt-3 w-full rounded-xl border border-white/10 bg-slate-950/60 px-3 py-2 text-sm text-white"
-              >
-                <option value="">Select team</option>
-                {teams.map((team) => (
-                  <option key={team.id} value={team.id}>
-                    {team.name}
-                  </option>
-                ))}
-              </select>
               <div className="mt-3 flex flex-wrap gap-2">
                 <button
                   type="button"
-                  disabled={!scoreTeamId}
-                  onClick={() => scoreTeamId && onScore(scoreTeamId, "correct")}
+                  disabled={!winnerTeamId}
+                  onClick={() => winnerTeamId && onScore("correct")}
                   className="rounded-full bg-green-500/20 px-4 py-2 text-xs uppercase tracking-widest text-green-200 hover:bg-green-400/30 disabled:cursor-not-allowed disabled:opacity-40"
                 >
                   Correct (+{question.value})
                 </button>
                 <button
                   type="button"
-                  disabled={!scoreTeamId}
-                  onClick={() => scoreTeamId && onScore(scoreTeamId, "wrong")}
+                  disabled={!winnerTeamId}
+                  onClick={() => winnerTeamId && onScore("wrong")}
                   className="rounded-full bg-red-500/20 px-4 py-2 text-xs uppercase tracking-widest text-red-200 hover:bg-red-400/30 disabled:cursor-not-allowed disabled:opacity-40"
                 >
                   Wrong (-{question.value})

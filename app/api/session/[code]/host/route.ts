@@ -47,10 +47,14 @@ export async function POST(
         session.buzzingOpen = true;
         session.winnerTeamId = undefined;
         session.buzzes = [];
+        session.attemptedWrongTeamIds = [];
         session.activeQuestionId = body.questionId;
         break;
       case "lockBuzzing":
         session.buzzingOpen = false;
+        session.winnerTeamId = undefined;
+        session.buzzes = [];
+        session.activeQuestionId = undefined;
         break;
       case "resetBuzzers":
         resetBuzzers(session);
@@ -74,6 +78,9 @@ export async function POST(
         if (body.teamId) {
           session.teams = session.teams.filter((t) => t.id !== body.teamId);
           session.buzzes = session.buzzes.filter((b) => b.teamId !== body.teamId);
+          session.attemptedWrongTeamIds = (session.attemptedWrongTeamIds ?? []).filter(
+            (id) => id !== body.teamId
+          );
           if (session.winnerTeamId === body.teamId) {
             session.winnerTeamId = undefined;
           }
@@ -83,6 +90,20 @@ export async function POST(
         if (body.teamId != null && body.delta != null) {
           const team = session.teams.find((t) => t.id === body.teamId);
           if (team) team.score += body.delta;
+        }
+        break;
+      case "scoreWrongReopen":
+        if (body.teamId != null) {
+          const team = session.teams.find((t) => t.id === body.teamId);
+          const q = body.questionId
+            ? session.board.flatMap((c) => c.questions).find((qu) => qu.id === body.questionId)
+            : undefined;
+          const delta = q ? -q.value : 0;
+          if (team) team.score += delta;
+          session.attemptedWrongTeamIds = [...(session.attemptedWrongTeamIds ?? []), body.teamId];
+          session.winnerTeamId = undefined;
+          session.buzzes = [];
+          session.buzzingOpen = true;
         }
         break;
       case "updateBoard":

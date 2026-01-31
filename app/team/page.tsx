@@ -86,6 +86,8 @@ export default function TeamPage() {
         }
       } else if (response.status === "locked") {
         setBuzzStatus("late");
+      } else if (response.status === "blocked") {
+        setBuzzStatus("late");
       }
     } catch (err) {
       console.error("Buzz failed:", err);
@@ -94,6 +96,7 @@ export default function TeamPage() {
 
   const hasBuzzed = session?.buzzes.some((b) => b.teamId === teamId) ?? false;
   const isWinner = session?.winnerTeamId === teamId;
+  const isBlocked = (session?.attemptedWrongTeamIds ?? []).includes(teamId ?? "");
 
   if (!session) {
     return (
@@ -163,6 +166,15 @@ export default function TeamPage() {
             </div>
             <div className="mt-3 text-lg text-white/80">
               Connected. Wait for the host to open a question.
+            </div>
+          </div>
+        ) : isBlocked ? (
+          <div className="rounded-3xl border border-white/10 bg-slate-900/60 p-6">
+            <div className="text-sm uppercase tracking-[0.35em] text-cyan-200">
+              You answered wrong
+            </div>
+            <div className="mt-3 text-lg text-white/80">
+              Other teams can try to answer.
             </div>
           </div>
         ) : (

@@ -46,6 +46,7 @@ export type SessionState = {
   winnerTeamId?: string;
   buzzes: Buzz[];
   activeQuestionId?: string;
+  attemptedWrongTeamIds?: string[];
   settings: SessionSettings;
   lastUpdatedAt: number;
 };
